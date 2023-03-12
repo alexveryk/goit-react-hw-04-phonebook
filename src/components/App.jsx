@@ -1,76 +1,52 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ContactLst } from './ContactLst/ContactList';
 import { Filter } from './Filter/Filter';
 import { PhonebookForm } from './PhonebookForm/PhoneForm';
 import { AppContainer } from './App.styled';
 
-export class App extends Component {
-  state = {
-    contacts: [],
-    filter: '',
+export const App = () => {
+  const [contacts, setContacts] = useState(() => {
+    const parsedContacts = JSON.parse(localStorage.getItem('contacts'));
+    return parsedContacts || [];
+  });
+  const [filter, setFilter] = useState('');
+
+  const deleteContacts = id => {
+    setContacts(contacts.filter(contact => contact.id !== id));
   };
 
-  deleteContacts = id => {
-    this.setState(prevState => ({
-      contacts: prevState.contacts.filter(contact => contact.id !== id),
-    }));
+  const handleIputСhange = event => {
+    setFilter(event.currentTarget.value);
   };
 
-  handleIputСhange = event => {
-    this.setState({
-      filter: event.currentTarget.value,
-    });
-  };
-
-  getVisibleName = () => {
-    const { filter, contacts } = this.state;
+  const getVisibleName = () => {
     const contactNormalize = filter.toLowerCase();
     return contacts.filter(contact =>
       contact.name.toLowerCase().includes(contactNormalize)
     );
   };
 
-  addContacts = newContacts => {
-    this.setState(prevState => {
-      if (this.state.contacts.some(el => el.name === newContacts.name)) {
-        alert(`${newContacts.name} is alredy in contacts`);
-      } else {
-        return {
-          contacts: [...prevState.contacts, newContacts],
-        };
-      }
+  const addContacts = newContacts => {
+    if (contacts.some(el => el.name === newContacts.name)) {
+      alert(`${newContacts.name} is alredy in contacts`);
+      return;
+    }
+    setContacts(prevState => {
+      return [...prevState, newContacts];
     });
   };
 
-  // Додаємо до state: контакти за умови що в LocalStorage щось є, інакше ігноруємо.
-  componentDidMount() {
-    const parsedContacts = JSON.parse(localStorage.getItem('contacts'));
+  useEffect(() => {
+    localStorage.setItem('contacts', JSON.stringify(contacts));
+  }, [contacts]);
 
-    if (parsedContacts) {
-      this.setState({ contacts: parsedContacts });
-    }
-  }
-
-  componentDidUpdate(prevProps, prevState) {
-    if (this.state.contacts !== prevState.contacts) {
-      localStorage.setItem('contacts', JSON.stringify(this.state.contacts));
-    }
-  }
-
-  render() {
-    const visibleName = this.getVisibleName();
-
-    return (
-      <AppContainer>
-        <h1>Phonebook</h1>
-        <PhonebookForm onSubmit={this.addContacts} />
-        <h2>Contacts</h2>
-        <Filter
-          onChange={this.handleIputСhange}
-          filterValue={this.state.filter}
-        />
-        <ContactLst visibleName={visibleName} onDelete={this.deleteContacts} />
-      </AppContainer>
-    );
-  }
-}
+  return (
+    <AppContainer>
+      <h1>Phonebook</h1>
+      <PhonebookForm onSubmit={addContacts} />
+      <h2>Contacts</h2>
+      <Filter onChange={handleIputСhange} filterValue={filter} />
+      <ContactLst visibleName={getVisibleName()} onDelete={deleteContacts} />
+    </AppContainer>
+  );
+};
